@@ -1,5 +1,12 @@
 import time
 
+from heapq import heappush as insert, heappop as extract_maximum
+
+from tkinter import Tk
+from tkinter.filedialog import askopenfilename
+import webbrowser
+
+
 notes = []
 
 class Note:
@@ -27,21 +34,31 @@ class Note:
             if self.name == temp[0]:
                 return self.data, self.get_time()
 
-    def create_note(self,type1,name,type2,text):
+    def create_note(self,type,name,type2,text,type3,filename,data,link):
         print("What do you want to do: 1 - create new note, 2 - show list of existing notes, 3 - show note, 4 - edit note")
-        type1 = int(input())
-        if type1 == 1:
+        type = int(input())
+        if type == 1:
             print("Enter a name for new note:")
             name = input()
             print("Select a note type number from the following pool: 1 - text, 2 - list, 3 - task list,"
               " 4 - table, 5 - image, 6 - file, 7 - link, ")
-            type2 = int(input())
-            if type2 == 1:
+            type = int(input())
+            if type == 1:
                 print("Enter the text of your note:")
                 text = input().split()
                 New_Note = Text_Note(name, text)
                 New_Note.save_note()
                 print(New_Note.get_data_and_time())
+                
+        if type == 6:
+            print("hi brah")
+            New_file = File_Note(filename,data)
+            New_file.open_file(filename)
+        if type == 7:
+            print("Enter your link")
+            New_Link = Link_Note(name,link)
+            New_Link.new_link(link)
+            
 
 class Text_Note(Note):
     def __init__(self, name, text):
@@ -68,31 +85,82 @@ class Image_Note(Note):
         Note.__init__(self, name, image)
 
 class File_Note(Note):
-    def __init__(self, name, file):
-        Note.__init__(self, name, file)
+    def __init__(self, filename,data):
+        Note.__init__(self, filename,data)
+        
+    
+    def open_file(self,filename):
+        Tk().withdraw() # we don't want a full GUI, so keep the root window from appearing
+        self.filename = askopenfilename() # show an "Open" dialog box and return the path to the selected file
+        print(filename)
 
 class Link_Note(Note):
     def __init__(self, name, link):
         Note.__init__(self, name, link)
+
+    def new_link(self,link):
+        webbrowser.open_new(r"link")
+        root = Tk()
+        self.link= input()
+        self.link.pack()
+        root.mailoop()
+        
+
+
 
 # фасад
 class Facade:
     def __init__(self):
         self._note = Note(name=self,data=self)
         self._text_note = Text_Note(name=self,text=self)
-        self._table_note = Table_Note(name=self,table=self)
+        # self._table_note = Table_Note(name=self,table=self)
         # self._list_note = List_Note()
         # self._task_list_note = Task_List_Note()
         # self._image_note = Image_Note()
-        # self._file_note = File_Note()
-        # self._link_note = Link_Note()
+        self._file_note = File_Note(filename=self,data=self)
+        self._link_note = Link_Note(link=self,name=self)
     def explore(self):
-        self._note.create_note(type1=self,name=self,type2=self,text=self)
+        self._note.create_note(type=self,name=self,type2=self,text=self,type3=self,filename=self,data=self,link=self)
     
 
 
     def operation_z(type1,name,type2,text):
         pass
+
+
+
+
+
+# def open_file():
+#     global file_name
+#     inp = askopenfile(mode='r')
+#     if inp is None:
+#         return 
+#         file_name = inp.name
+#     data = inp.read()
+#     text.delete('1.0',END)
+#     text.insert('1.0',END)
+
+# root = Tk()
+# root.title("Заметки")
+# root.geometry("400x400")
+
+# text = Text(root,width=400,height=400)
+# text.pack()
+
+# menu_bar = Menu(root)
+# file_menu = Menu(menu_bar)
+
+# file_menu.add_command(label="New",command=new_file)
+# file_menu.add_command(label="Open",command=open_file)
+# file_menu.add_command(label="Save as",command=save_as)
+# file_menu.add_command(label="Create Note",command=create_note)
+
+# menu_bar.add_cascade(label="Файл", menu=file_menu)
+
+# root.config(menu=menu_bar)
+
+# root.mainloop()    
 
 
 
