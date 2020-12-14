@@ -2,7 +2,7 @@ import time
 
 from heapq import heappush as insert, heappop as extract_maximum
 
-from tkinter import Tk
+import tkinter as t
 from tkinter.filedialog import askopenfilename
 import webbrowser
 
@@ -34,7 +34,7 @@ class Note:
             if self.name == temp[0]:
                 return self.data, self.get_time()
 
-    def create_note(self,type,name,type2,text,type3,filename,data,link):
+    def create_note(self,type,name,type2,text,type3,filename,data,link,URL):
         print("What do you want to do: 1 - create new note, 2 - show list of existing notes, 3 - show note, 4 - edit note")
         type = int(input())
         if type == 1:
@@ -54,10 +54,15 @@ class Note:
             print("hi brah")
             New_file = File_Note(filename,data)
             New_file.open_file(filename)
+            New_file.save_note()
+            print(New_file.get_data_and_time())
         if type == 7:
             print("Enter your link")
-            New_Link = Link_Note(name,link)
-            New_Link.new_link(link)
+            link=input()
+            New_Link = Link_Note(URL,link)
+            New_Link.new_link(URL,link)
+            New_Link.save_note()
+            print(New_Link.get_data_and_time())
             
 
 class Text_Note(Note):
@@ -90,20 +95,23 @@ class File_Note(Note):
         
     
     def open_file(self,filename):
-        Tk().withdraw() # we don't want a full GUI, so keep the root window from appearing
-        self.filename = askopenfilename() # show an "Open" dialog box and return the path to the selected file
+        self.filename = filename
+         # we don't want a full GUI, so keep the root window from appearing
+        filename = askopenfilename() # show an "Open" dialog box and return the path to the selected file
         print(filename)
 
 class Link_Note(Note):
     def __init__(self, name, link):
         Note.__init__(self, name, link)
 
-    def new_link(self,link):
-        webbrowser.open_new(r"link")
-        root = Tk()
-        self.link= input()
-        self.link.pack()
-        root.mailoop()
+    def new_link(self,URL,link):
+        self.link = link
+        self.URL = webbrowser.open_new(self.link) 
+        
+        
+        
+
+        
         
 
 
@@ -119,8 +127,10 @@ class Facade:
         # self._image_note = Image_Note()
         self._file_note = File_Note(filename=self,data=self)
         self._link_note = Link_Note(link=self,name=self)
+
+
     def explore(self):
-        self._note.create_note(type=self,name=self,type2=self,text=self,type3=self,filename=self,data=self,link=self)
+        self._note.create_note(type=self,name=self,type2=self,text=self,type3=self,filename=self,data=self,link=self,URL=self)
     
 
 
