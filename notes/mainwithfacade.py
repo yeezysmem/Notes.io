@@ -15,6 +15,7 @@ class Note:
         self.data = data
         self.time = time.time()
 
+
     def set_name(self, name):
         self.name = name
 
@@ -33,6 +34,7 @@ class Note:
             temp = notes[i]
             if self.name == temp[0]:
                 return self.data, self.get_time()
+    
 
     def create_note(self,type,name,type2,text,type3,filename,data,link,URL):
         print("What do you want to do: 1 - create new note, 2 - show list of existing notes, 3 - show note, 4 - edit note")
@@ -43,12 +45,15 @@ class Note:
             print("Select a note type number from the following pool: 1 - text, 2 - list, 3 - task list,"
               " 4 - table, 5 - image, 6 - file, 7 - link, ")
             type = int(input())
-            if type == 1:
-                print("Enter the text of your note:")
-                text = input().split()
-                New_Note = Text_Note(name, text)
-                New_Note.save_note()
-                print(New_Note.get_data_and_time())
+        if type == 1:
+            print("Enter the text of your note:")
+            text = input().split()
+            New_Note = Text_Note(name, text)
+            New_Note.save_note()
+            print(New_Note.get_data_and_time())
+            print("SSelect a note type number from the following pool: 1 - text, 2 - list, 3 - task list,"
+              " 4 - table, 5 - image, 6 - file, 7 - link,")
+            type = int(input())
                 
         if type == 6:
             print("hi brah")
@@ -73,7 +78,7 @@ class Text_Note(Note):
     def create_table(self):
         pass
 
-class Table_Note(object):
+class Table_Note(Note):
     def __init__(self, name, table):
         Note.__init__(self, name, table)
 
@@ -96,8 +101,7 @@ class File_Note(Note):
     
     def open_file(self,filename):
         self.filename = filename
-         # we don't want a full GUI, so keep the root window from appearing
-        filename = askopenfilename() # show an "Open" dialog box and return the path to the selected file
+        filename = askopenfilename() 
         print(filename)
 
 class Link_Note(Note):
