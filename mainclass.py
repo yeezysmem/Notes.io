@@ -1,6 +1,21 @@
 import time
 
+from prettytable import PrettyTable
+
+from PIL import Image
+
 notes = []
+
+# class Note_Container():
+#     def __init__(self, name):
+#         self.name = name
+#         self.objects = []
+#
+#     def add_object(self, object):
+#         self.objects.append(object)
+
+
+
 
 class Note():
     def __init__(self, name, data):
@@ -27,28 +42,68 @@ class Note():
             if self.name == temp[0]:
                 return self.data, self.get_time()
 
+    def print(self):
+        print(self.data)
+
 class Text_Note(Note):
     def __init__(self, name, text):
         Note.__init__(self, name, text)
 
-    def create_table(self):
-        pass
 
 class Table_Note(Note):
-    def __init__(self, name, table):
+    def __init__(self, name, table = None):
         Note.__init__(self, name, table)
 
+    def create_table(self):
+        self.table = PrettyTable()
+        return self.table
+
+    def insert_field_names(self, names):
+        self.table.field_names = names
+
+    def insert_rows(self, rows):
+        self.table.add_row(rows)
+
+    def insert_column(self, new_table):
+        column = input().split()
+        new_table.add_column(column)
+
+    def print(self):
+        print(self.table)
+
+
 class List_Note(Note):
-    def __init__(self, name, list):
-        Note.__init__(self, name, list)
+    def __init__(self, name, list_heading = None, listt = None):
+        Note.__init__(self, name, listt)
+        self.list_heading = list_heading
+        self.listt = []
+
+    def create_list_heading(self, heading):
+        self.list_heading = heading
+
+    def add_element(self, string):
+        self.listt.append(string)
+
+    def print(self):
+        print(self.list_heading)
+        for i in range(len(self.listt)):
+            print(i+1,".", self.listt[i])
+
 
 class Task_List_Note(Note):
     def __init__(self, name, list): #need to add priorities
         Note.__init__(self, name, list)
 
 class Image_Note(Note):
-    def __init__(self, name, image):
+    def __init__(self, name, image = None):
         Note.__init__(self, name, image)
+
+    def choose_img(self, path):
+        self.image = Image.open(path)
+        return self.image
+
+    def print(self):
+        self.image.show()
 
 class File_Note(Note):
     def __init__(self, name, file):
@@ -73,4 +128,40 @@ if __name__ == "__main__":
             text = input().split()
             New_Note = Text_Note(name, text)
             New_Note.save_note()
-            print(New_Note.get_data_and_time())
+            New_Note.print()
+
+        if type2 == 2:
+            New_Note = List_Note(name)
+            print("Enter the heading of your list")
+            heading = input()
+            New_Note.create_list_heading(heading)
+            print("How many elements will be in your list?:")
+            quantity = int(input())
+            for i in range(quantity):
+                print("Enter the element of your list with number", i+1)
+                stringg = input()
+                New_Note.add_element(stringg)
+            print("Your list is:")
+            New_Note.print()
+
+        if type2 == 4:
+            New_Note = Table_Note(name)
+            New_Note.create_table()
+            print("Enter the fields names for your table:")
+            field_names = input().split()
+            New_Note.insert_field_names(field_names)
+            print("Enter the rows of you table")
+            rows = input().split()
+            New_Note.insert_rows(rows)
+            print("Your table is:")
+            New_Note.print()
+
+        if type2 == 5:
+            print("Enter the path to your image:")
+            img_path = input()
+            New_Note = Image_Note(name)
+            New_Note.choose_img(img_path)
+            New_Note.print()
+            print("Your image is currently displaying on your screen")
+
+
