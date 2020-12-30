@@ -1,134 +1,140 @@
 import time
 
-from heapq import heappush as insert, heappop as extract_maximum
+from prettytable import PrettyTable
 
+# from PIL import Image
 import tkinter as t
 from tkinter.filedialog import askopenfilename
 import webbrowser
 
-from prettytable import PrettyTable
+from sqlalchemy import create_engine
 
-from PIL import Image
+from sqlalchemy.orm.session import sessionmaker
 
+engine = create_engine('sqlite:///DataBaseForNotes.db' , echo=False)
 
-notes = []
+from sqlalchemy import Column, Integer, ForeignKey, String
+# from sqlalchemy.orm import relationship
+from sqlalchemy.ext.declarative import declarative_base
 
-class Note:
-    def __init__(self, name, data):
-        self.name = name
-        self.data = data
-        self.time = time.time()
+base = declarative_base()
 
+# class Note_Container(base):
+#     __tablename__= "notes_container"
+#     id = Column(Integer, primary_key=True)
+#     name = Column(String)
+#     sub_note = relationship("Note")
 
-    def set_name(self, name):
-        self.name = name
+class Note(base):
+    __tablename__="note"
+    id = Column(Integer, primary_key=True)
+    name = Column(String)
+    data = Column(String)
+    type = Column(String)
+    time = Column(String)
+    # container_id = Column(ForeignKey('notes_container.id'))
+    # note = relationship("Note_Container")
+
+    __mapper_args__ = {'polymorphic_identity': 'note'}
+
 
     def get_time(self):
-        return time.ctime(self.time)
+         self.time = time.ctime()
 
     def set_data(self, data):
         self.data = data
 
-    def save_note(self):
-        arr = [self.name, self.data, self.time]
-        notes.append(arr)
-
-    def get_data_and_time(self):
-        for i in range(len(notes)):
-            temp = notes[i]
-            if self.name == temp[0]:
-                return self.data, self.get_time()
     def print(self):
         print(self.data)
 
-    def create_note(type,name,type2,text,filename,data,link,URL,img_path):
-        print("What do you want to do: 1 - create new note, 2 - show list of existing notes, 3 - show note, 4 - edit note")
-        type = int(input())
-        if type == 1:
-            print("Enter a name for new note:")
-            name = input()
-            print("Select a note type number from the following pool: 1 - text, 2 - list, 3 - task list,"
-              " 4 - table, 5 - image, 6 - file, 7 - link, ")
-            type2 = int(input())
-        if type2 == 1:
-            print("Enter the text of your note:")
-            text = input().split()
-            New_Note = Text_Note(name, text)
-            New_Note.save_note()
-            New_Note.print()
-
-        if type2 == 4:
-            New_Note = Table_Note(name)
-            New_Note.create_table()
-            print("Enter the fields names for your table:")
-            field_names = input().split()
-            New_Note.insert_field_names(field_names)
-            print("Enter the rows of you table")
-            rows = input().split()
-            New_Note.insert_rows(rows)
-            print("Your table is:")
-            New_Note.print()
-
-        if type2 == 5:
-            print("Enter the path to your image:")
-            img_path = input()
-            New_Note = Image_Note(name)
-            New_Note.choose_img(img_path)
-            New_Note.print()
-            print("Your image is currently displaying on your screen")
-            
-        if type2 == 6:
-            print("hi brah")
-            New_file = File_Note(filename,data)
-            New_file.open_file(filename)
-            New_file.save_note()
-            New_file.print()
-            print(New_file.get_data_and_time())
-            
-        if type2 == 7:
-            print("Enter your link")
-            link=input()
-            New_Link = Link_Note(URL,link)
-            New_Link.new_link(URL,link)
-            New_Link.save_note()
-            New_Link.print()
-            print(New_Link.get_data_and_time())
-            
-
-class Text_Note(Note):
-    def __init__(self, name, text):
-        Note.__init__(self, name, text)
-        pass
-
-    def create_table(self):
-        pass
+    def delete_note(self):
+        session = sessionmaker(bind=engine)()
+        print("Enter the name of note you want to delete:")
+        title = input()
+        q = session.query(Note).filter_by(name=title).first()
+        session.delete(q)
+        session.commit()
 
 class Table_Note(Note):
-    def __init__(self, name, table = None):
-        Note.__init__(self, name, table)
+    __tablename__="tablenote"
+    id = Column(Integer, ForeignKey('note.id'), primary_key=True)
+
+    def set_type(self):
+        self.type = "table"
 
     def create_table(self):
-        self.table = PrettyTable()
-        return self.table
+        self.data = PrettyTable()
+        return self.data
 
     def insert_field_names(self, names):
-        self.table.field_names = names
+        self.data.field_names = names
 
     def insert_rows(self, rows):
-        self.table.add_row(rows)
+        self.data.add_row(rows)
 
     def insert_column(self, new_table):
         column = input().split()
         new_table.add_column(column)
 
-    def print(self):
-        print(self.table)
+    def create_tablenote(self):
+        print("Enter a name for new note:")
+        name = input()
+        session = sessionmaker(bind=engine)()
+        New_Note = Table_Note()
+        New_Note.name = name
+        New_Note.set_type()
+        New_Note.create_table()
+        New_Note.get_time()
+        print("Enter the fields names for your table:")
+        field_names = input().split()
+        New_Note.insert_field_names(field_names)
+        print("Enter the rows of you table")
+        rows = input().split()
+        New_Note.insert_rows(rows)
+        table_string = New_Note.data.get_string()
+        New_Note.data = table_string
+        session.add(New_Note)
+        session.commit()
+
+    def show_tablenote(self):
+        session = sessionmaker(bind=engine)()
+        print("Enter the name of table you want to show:")
+        title = input()
+        q = session.query(Table_Note).filter_by(name=title)
+        other_note = q.first()
+        other_note.print()
+
+class Text_Note(Note):
+    __tablename__ = "textnote"
+    id = Column(Integer, ForeignKey('note.id'), primary_key=True)
+
+    def set_type(self):
+        self.type = "text"
+    
+    def create_textnote(self):
+        print("Enter a name for new note:")
+        name = input()
+        session = sessionmaker(bind=engine)()
+        New_Note = Text_Note()
+        New_Note.name = name
+        New_Note.set_type()
+        New_Note.get_time()
+        print("Enter the text of your note:")
+        text = input()
+        New_Note.set_data(text)
+        session.add(New_Note)
+        session.commit()
+
 
 class List_Note(Note):
-    def __init__(self, name, list_heading = None, listt = None):
-        Note.__init__(self, name, listt)
-        self.list_heading = list_heading
-        self.listt = []
+    __tablename__ = "listnote"
+    id = Column(Integer, ForeignKey('note.id'), primary_key=True)
+    type = "list"
+    list_heading = Column(String)
+    listt = Column(String)
+
+    def set_type(self):
+        self.type = "list"
 
     def create_list_heading(self, heading):
         self.list_heading = heading
@@ -140,74 +146,206 @@ class List_Note(Note):
         print(self.list_heading)
         for i in range(len(self.listt)):
             print(i+1,".", self.listt[i])
+    
+    def create_listnote(self):
+        print("Enter a name for new note:")
+        name = input()
+        session = sessionmaker(bind=engine)()
+        New_Note = List_Note()
+        New_Note.name = name
+        New_Note.set_type()
+        New_Note.get_time()
+        print("Enter the list heading:")
+        heading = input()
+        New_Note.create_list_heading(heading)
+        print("Enter the amount of items in list:")
+        num = int(input())
+        for i in range(num):
+            print("Enter list item:")
+            item = input()
+            New_Note.add_element(item)
+        session.add(New_Note)
+        session.commit()
 
-        
-
-class Task_List_Note(Note):
-    def __init__(self, name, list): #need to add priorities
-        Note.__init__(self, name, list)
 
 class Image_Note(Note):
-    def __init__(self, name, image = None):
-        Note.__init__(self, name, image)
+    __tablename__ = "imagenote"
+    id = Column(Integer, ForeignKey('note.id'), primary_key=True)
+    path = Column(String)
 
-    def choose_img(self, path):
-        self.image = Image.open(path)
-        return self.image
 
-    def print(self):
-        self.image.show()
+    def set_type(self):
+        self.type = "image"
+
+    def set_path(self):
+        self.path = input()
+
+    # def print(self):
+    #     self.data.show()
+
+    def import_pict_binary(self):
+        f = open(self.path, "rb")
+        pict_binary = f.read()
+        self.data = pict_binary
+
+    def create_imagenote(self):
+        print("Enter a name for new note:")
+        name = input()
+        session = sessionmaker(bind=engine)()
+        New_Note = Image_Note()
+        New_Note.name = name
+        New_Note.set_type()
+        New_Note.get_time()
+        print("Enter the path to your image:")
+        New_Note.import_pict_binary()
+        session.add(New_Note)
+        session.commit()
+
+
 
 class File_Note(Note):
-    def __init__(self, filename,data):
-        Note.__init__(self, filename,data)
-        
-    
-    def open_file(self,filename):
-        self.filename = filename
-        filename = askopenfilename() 
-        print(filename)
+    __tablename__ = "filenote"
+    id = Column(Integer, ForeignKey('note.id'), primary_key=True)
+    path = Column(String)
+
+    def set_type(self):
+        self.type = "file"
+
+    def import_file_binary(self):
+        self.path = input()
+        f = open(self.path, "rb")
+        file_binary = f.read()
+        self.data = file_binary
+
+    def create_filenote(self):
+        print("Enter a name for new note:")
+        name = input()
+        session = sessionmaker(bind=engine)()
+        New_Note = File_Note()
+        New_Note.name = name
+        New_Note.set_type()
+        New_Note.get_time()
+        print("Enter the path to your file:")
+        New_Note.import_file_binary()
+        session.add(New_Note)
+        session.commit()
+
+
+
 
 class Link_Note(Note):
-    def __init__(self, name, link):
-        Note.__init__(self, name, link)
+    __tablename__ = "linknote"
+    id = Column(Integer, ForeignKey('note.id'), primary_key=True)
 
-    def new_link(self,URL,link):
-        self.link = link
-        self.URL = webbrowser.open_new(self.link) 
-        
-        
-        
+    def set_type(self):
+        self.type = "link"
 
-        
-        
-
-
-
-# фасад
-class Facade:
-    def __init__(self):
-        self._note = Note(name=self,data=self)
-        self._text_note = Text_Note(name=self,text=self)
-        self._table_note = Table_Note(name=self,table=None)
-        self._list_note = List_Note(name=self,list_heading = None, listt = None)
-        # self._task_list_note = Task_List_Note()
-        self._image_note = Image_Note(name=self,image=None)
-        self._file_note = File_Note(filename=self,data=self)
-        self._link_note = Link_Note(link=self,name=self)
-
-
-    def explore(self):
-        self._note.create_note(name=self,type2=self,text=self,filename=self,data=self,link=self,URL=self,img_path=self)
-    
-
-
-    def operation_z(type1,name,type2,text):
+    def new_URL(self):
         pass
 
+    def follow_the_link(self):
+        pass
+    
+    def create_linknote(self):
+        print("Enter a name for new note:")
+        name = input()
+        session = sessionmaker(bind=engine)()
+        New_Note = Link_Note()
+        New_Note.name = name
+        New_Note.set_type()
+        New_Note.get_time()
+        print("Enter a link to save in note:")
+        self.data = input()
+        New_Note.new_URL()
+        webbrowser.open_new(self.data)
+        session.add(New_Note)
+        session.commit()
 
 
+
+base.metadata.create_all(engine)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# def show_all_notes():
+#     session = sessionmaker(bind=engine)()
+#     q = session.query(Note).all()
+#     for i in range(len(q)):
+#
+
+# def edit_note():
+#     pass
+
+
+
+
+class Facade(object):
+    def __init__(self):
+        self._note = Note()
+        self._tablenote = Table_Note()
+        self._textnote = Text_Note()
+        self._listnote = List_Note()
+        self._imagenote = Image_Note()
+        self._filenote = File_Note()
+        self._linknote = Link_Note()
+
+    def subsystem(self):
+        self._tablenote.create_tablenote()
+        # self._textnote.create_textnote()
+        # self._listnote.create_listnote()
+        # self._imagenote.create_imagenote()
+        # self._filenote.create_filenote()
+        # self._tablenote.show_tablenote()
+        # self._linknote.create_linknote()
+        
+        
+        
+        
+        
+        
+        
+        
+
+# Клиентская часть
 if __name__ == "__main__":
     facade = Facade()
-    facade.explore()
+    facade.subsystem()
+# /Users/vadimarko/Desktop/Exams.png
+
+
+
+
+
+# create_tablenote()
+# show_tablenote()
+
+
+
+# class Note_Container():
+# #     def __init__(self, name):
+# #         self.name = name
+# #         self.objects = []
+# #
+# #     def add_object(self, object):
+# #         self.objects.append(object)
+
+
 
