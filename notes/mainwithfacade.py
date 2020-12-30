@@ -240,11 +240,12 @@ class Link_Note(Note):
     def set_type(self):
         self.type = "link"
 
+
     def new_URL(self):
-        pass
+        self.data = input()
 
     def follow_the_link(self):
-        pass
+        webbrowser.open_new(self.data)
     
     def create_linknote(self):
         print("Enter a name for new note:")
@@ -255,9 +256,7 @@ class Link_Note(Note):
         New_Note.set_type()
         New_Note.get_time()
         print("Enter a link to save in note:")
-        self.data = input()
         New_Note.new_URL()
-        webbrowser.open_new(self.data)
         session.add(New_Note)
         session.commit()
 
@@ -308,13 +307,15 @@ class Facade(object):
         self._linknote = Link_Note()
 
     def subsystem(self):
-        self._tablenote.create_tablenote()
+        # self._tablenote.create_tablenote()
         # self._textnote.create_textnote()
         # self._listnote.create_listnote()
         # self._imagenote.create_imagenote()
         # self._filenote.create_filenote()
         # self._tablenote.show_tablenote()
-        # self._linknote.create_linknote()
+        self._linknote.create_linknote()
+        self._linknote.new_URL()
+        self._linknote.follow_the_link()
         
         
         
