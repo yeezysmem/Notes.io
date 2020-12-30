@@ -1,18 +1,26 @@
 import time
 
+import sqlite3
+
 from prettytable import PrettyTable
 
 from PIL import Image
 
 notes = []
 
-# class Note_Container():
-#     def __init__(self, name):
-#         self.name = name
-#         self.objects = []
-#
-#     def add_object(self, object):
-#         self.objects.append(object)
+def sqlite3_create_db():
+    con = sqlite3.connect("./DataBaseForNotes.db")
+    cur = con.cursor()
+    cur.execute("CREATE TABLE IF NOT EXISTS")
+
+
+class Note_Container():
+    def __init__(self, name):
+        self.name = name
+        self.objects = []
+
+    def add_object(self, object):
+        self.objects.append(object)
 
 
 
