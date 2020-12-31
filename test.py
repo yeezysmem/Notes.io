@@ -2,20 +2,32 @@ import time
 
 from prettytable import PrettyTable
 
-# from PIL import Image
-#
-# from tkinter.filedialog import askopenfilename
+from PIL import Image
+
+import numpy as np
+
+import PIL.Image, PIL.ImageTk
+
+import tkinter
+
+import cv2
+
 import webbrowser
 
 from sqlalchemy import create_engine
 
 from sqlalchemy.orm.session import sessionmaker
 
+import subprocess, platform
+
+
 engine = create_engine('sqlite:///DataBaseForNotes.db' , echo=False)
 
 from sqlalchemy import Column, Integer, ForeignKey, String
 # from sqlalchemy.orm import relationship
 from sqlalchemy.ext.declarative import declarative_base
+
+import ast
 
 base = declarative_base()
 
@@ -79,23 +91,21 @@ class Text_Note(Note):
 class List_Note(Note):
     __tablename__ = "listnote"
     id = Column(Integer, ForeignKey('note.id'), primary_key=True)
-    type = "list"
-    list_heading = Column(String)
-    listt = Column(String)
 
     def set_type(self):
         self.type = "list"
+        self.data = []
 
-    def create_list_heading(self, heading):
-        self.list_heading = heading
 
-    def add_element(self, string):
-        self.listt.append(string)
+    def add_element(self, number):
+        string = input()
+        num = str(number) + '.'
+        element = str(num + string)
+        self.data.append(element)
+
 
     def print(self):
-        print(self.list_heading)
-        for i in range(len(self.listt)):
-            print(i+1,".", self.listt[i])
+        print(self.data)
 
 
 class Image_Note(Note):
@@ -123,16 +133,18 @@ class Image_Note(Note):
 class File_Note(Note):
     __tablename__ = "filenote"
     id = Column(Integer, ForeignKey('note.id'), primary_key=True)
-    path = Column(String)
+    # path = Column(String)
 
     def set_type(self):
         self.type = "file"
 
-    def import_file_binary(self):
-        self.path = input()
-        f = open(self.path, "rb")
-        file_binary = f.read()
-        self.data = file_binary
+    def save_file_path(self):
+        self.data = input()
+
+    # def import_file_binary(self):
+    #     f = open(self.path, "rb")
+    #     file_binary = f.read()
+    #     self.data = file_binary
 
 
 
@@ -143,7 +155,6 @@ class Link_Note(Note):
     def set_type(self):
         self.type = "link"
 
-
     def new_URL(self):
         self.data = input()
 
@@ -151,12 +162,7 @@ class Link_Note(Note):
         webbrowser.open_new(self.data)
 
 
-
 base.metadata.create_all(engine)
-
-
-
-
 
 
 def create_tablenote():
@@ -201,15 +207,12 @@ def create_listnote():
     New_Note.name = name
     New_Note.set_type()
     New_Note.get_time()
-    print("Enter the list heading:")
-    heading = input()
-    New_Note.create_list_heading(heading)
     print("Enter the amount of items in list:")
     num = int(input())
     for i in range(num):
-        print("Enter list item:")
-        item = input()
-        New_Note.add_element(item)
+        print("Enter the list element:")
+        New_Note.add_element(i+1)
+    New_Note.data = str(New_Note.data)
     session.add(New_Note)
     session.commit()
 
@@ -222,6 +225,7 @@ def create_imagenote():
     New_Note.set_type()
     New_Note.get_time()
     print("Enter the path to your image:")
+    New_Note.set_path()
     New_Note.import_pict_binary()
     session.add(New_Note)
     session.commit()
@@ -236,7 +240,7 @@ def create_filenote():
     New_Note.set_type()
     New_Note.get_time()
     print("Enter the path to your file:")
-    New_Note.import_file_binary()
+    New_Note.save_file_path()
     session.add(New_Note)
     session.commit()
 
@@ -282,15 +286,98 @@ def show_tablenote():
     other_note.print()
 
 
+def show_listnote():
+    session = sessionmaker(bind=engine)()
+    print("Enter the name of list you want to show:")
+    title = input()
+    q = session.query(List_Note).filter_by(name=title)
+    other_note = q.first()
+    string = other_note.data
+    arr = ast.literal_eval(string)
+    arr = [n.strip() for n in arr]
+    for i in arr:
+        print(i)
+
+
+def show_imagenote():
+    session = sessionmaker(bind=engine)()
+    print("Enter the name of image note you want to show:")
+    title = input()
+    q = session.query(Image_Note).filter_by(name=title)
+    other_note = q.first()
+    image = other_note.data
+    nparr = np.fromstring(image, np.uint8)
+    cv_img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+    window = tkinter.Tk()
+    height, width, no_channels = cv_img.shape
+    canvas = tkinter.Canvas(window, width=width, height=height)
+    canvas.pack()
+    photo = PIL.ImageTk.PhotoImage(image=PIL.Image.fromarray(cv_img))
+    canvas.create_image(0, 0, image=photo, anchor=tkinter.NW)
+    window.mainloop()
+
+
+def show_filenote():
+    session = sessionmaker(bind=engine)()
+    print("Enter the name of file note you want to show and open:")
+    title = input()
+    q = session.query(File_Note).filter_by(name=title)
+    other_note = q.first()
+    file_path = other_note.data
+    if platform.system() == 'Darwin':  # macOS
+        subprocess.call(('open', file_path))
+    # elif platform.system() == 'Windows':  # Windows
+    #     os.startfile(file_path)
+    else:  # linux variants
+        subprocess.call(('xdg-open', file_path))
+
+
+def show_textnote():
+    session = sessionmaker(bind=engine)()
+    print("Enter the name of text note you want to show:")
+    title = input()
+    q = session.query(Text_Note).filter_by(name=title)
+    other_note = q.first()
+    print(other_note.data)
+
+
+def show_linknote():
+    session = sessionmaker(bind=engine)()
+    print("Enter the name of link note you want to show:")
+    title = input()
+    q = session.query(Link_Note).filter_by(name=title)
+    other_note = q.first()
+    other_note.follow_the_link()
+
+
+
+
+
+
 # /Users/vadimarko/Desktop/Exams.png
+# /Users/vadimarko/Desktop/studying/Essay.docx
 
 
 
 
 
-# create_tablenote()
-# show_tablenote()
+create_tablenote()
+show_tablenote()
 
+create_textnote()
+show_textnote()
+#
+create_linknote()
+show_linknote()
+#
+create_imagenote()
+show_imagenote()
+
+create_filenote()
+show_filenote()
+
+create_listnote()
+show_listnote()
 
 
 # class Note_Container():
